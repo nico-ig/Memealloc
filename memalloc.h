@@ -1,5 +1,3 @@
-void *original_brk;
-
 /*
  * Get initial brk address
  */

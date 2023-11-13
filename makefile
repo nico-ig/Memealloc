@@ -1,21 +1,25 @@
-TARGET ?= memalloc
+TARGET = $(firstword $(MAKECMDGOALS))
 
 CC = gcc
-CFLAGS = -g -Wall -Wextra --no-pie
+CFLAGS = -g -Wall -Wextra
 
-exemplo: exemplo.o memalloc.o
-	$(CC) $(CFLAGS) $^ -o $@
+ifeq ($(filter clean purge,$(MAKECMDGOALS)),)
 
-exemplo.o: exemplo.c
-	$(CC) $(CFLAGS) -c $^ -o $@
+$(TARGET): $(TARGET).o memalloc.o
+	$(CC) $(CFLAGS) $^ -o $@ -fPIE
+
+$(TARGET).o: $(TARGET).c
+	$(CC) $(CFLAGS) -c $^ -o $@ -fPIC
 
 memalloc.o: memalloc.s
-	$(CC) $(CFLAGS) -c $^ -o $@
+	$(CC) $(CFLAGS) -c $^ -o $@ -fPIC
+
+endif
 
 clean:
 		@rm -f *.o vgcore*
 
 purge: clean
-		@rm -f $(TARGET) exemplo
+		@rm -f $(TARGET) exemplo test
 
 

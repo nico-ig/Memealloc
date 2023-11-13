@@ -19,9 +19,7 @@ int main() {
 
 	printf("============================== ROTINAS DE TESTE ==============================\n");
 	
-  printf("%p\n", original_brk);
 	setup_brk();
-  printf("%p\n", original_brk);
 	void *initial_brk = original_brk;
 	void *alloc_pointers[3];
 
