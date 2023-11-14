@@ -35,6 +35,7 @@ memory_alloc:
   pushq %r12                      #save preserved registers
   pushq %r13
   pushq %r14
+  pushq %r15
   
   movq %rdi, %r12                 #%r12 has the size to be alloc
 
@@ -42,24 +43,59 @@ memory_alloc:
   movq %rax, %r13                 #%r13 has the current brk
   movq original_brk(%rip), %r14   #%r14 has the start address
 
-                                  #compare the current address with current brk,
-  cmp %r13, %r14                  #verify if is necessary to alloc more space in heap
-  je _ALLOC_HEAP
+  _VERIFY_ADDR:                   #compare the current address with current brk,
+    cmpq %r13, %r14               #verify if is necessary to alloc more space in heap
+    jge _ALLOC_HEAP
 
-  _ALLOC_HEAP:                    #current address is at the end of current heap
-    addq %r12, %r13               #%r13 has the current brk + the size to be alloc
-    addq $16, %r13                #%r13 has the current brk + total size
+    cmpq $1, (%r14)               #verify if current address is allocated
+    je _NEXT_ADDR                 #current address is already allocated
+                                  
+                                  #current address is free
+    cmp %r12, +8(%r14)            #verify if current block is big enough
+    jl _NEXT_ADDR                 #cannot fit in current block
 
-    movq %r13, %rdi               #alloc the new size in heap
-    movq $12, %rax
-    syscall
+    movq +8(%r14), %r15           #%r15 has the current block size
+    subq $17, %r15                #min size so it can be split in two
+    cmp %r12, %r15                #verify if the remaining size is enough
+    jl _DONT_SPLIT                #block cannot be split in two
+    
+                                  #block will be split in two    
+    movq %r14, %r15               #%r15 has a copy of current address
+    addq %r12, %r15               #%r15 is the start of remaining block after split
+    movq $0, (%r15)               #flag remaining block as free
 
+    movq +8(%r14), %r13           #%r13 has the total block size
+    subq %r12, %r13               #%r13 has the total block size - requested size
+    subq $16, %r13                #%r13 has the remaining size after split and block header
+    movq %r13, +8(%r15)           #save the size for the remainig block
+
+    jmp _ALLOC_END                #save requested block
+
+    _DONT_SPLIT:
+      movq +8(%r14), %r12         #requested block will have the same size as free block
+      jmp _ALLOC_END              #save requested block
+
+    _NEXT_ADDR:
+      addq +8(%r14), %r14           
+      addq $16, %r14
+      jmp _VERIFY_ADDR
+
+    _ALLOC_HEAP:                  #current address is at the end of current heap
+      addq %r12, %r13             #%r13 has the current brk + the size to be alloc
+      addq $16, %r13              #%r13 has the current brk + total size
+
+      movq %r13, %rdi             #alloc the new size in heap
+      movq $12, %rax
+      syscall
+
+  _ALLOC_END:
     movq $1, (%r14)               #flag the block as being used 
     movq %r12, 8(%r14)            #save the size 
     addq $16, %r14                #return address is after the block header
     movq %r14, %rax               #return the address 
  
-  popq %r14                       #restore preserved registers
+  popq %r15                       #restore preserved registers
+  popq %r14
   popq %r13
   popq %r12
 

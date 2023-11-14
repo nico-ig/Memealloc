@@ -41,6 +41,7 @@ int main() {
 	printf("\tTAMANHO: %s\n", *((long long*) (alloc_pointers[1]-8)) == 50 ? "CORRETO!" : "INCORRETO!");
 	printf("==>> ALOCANDO UM ESPAÇO DE 100 BYTES:\n");
 	printf("\tLOCAL: %s\n", alloc_pointers[1]+100 == alloc_pointers[2]-16 ? "CORRETO!" : "INCORRETO!");
+  printf("%p %p\n", alloc_pointers[1], alloc_pointers[2]);
 	printf("\tIND. DE USO: %s\n", *((long long*) (alloc_pointers[2]-16)) == 1 ? "CORRETO!" : "INCORRETO!");
 	printf("\tTAMANHO: %s\n", *((long long*) (alloc_pointers[2]-8)) == 100 ? "CORRETO!" : "INCORRETO!");
 	printf("==> VERIFICANDO A FRAGMENTAÇÃO DE MEMÓRIA:\n");
