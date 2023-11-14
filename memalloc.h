@@ -21,6 +21,11 @@ void *memory_alloc(unsigned long int bytes);
 int memory_free(void *pointer);
 
 /*
+ * Returns the current brk address
+ */
+void *current_brk();
+
+/*
  * Each block has the following struct:
  *
  * 0               1               2  
