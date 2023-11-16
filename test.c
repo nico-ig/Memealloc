@@ -74,6 +74,15 @@ void total() {
 }
 
 void test_setup_brk() {
+  printf("/*\n");
+  printf(" * Verify if the brk is corectly setup\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Setup brk\n");
+  printf(" * 2. Verify if brk saved is the same as current brk\n");
+  printf(" *\n");
+  printf(" */\n");
+
   printf("=====>> SETUP BRK\n");
 
   void *expected_brk = current_brk();
@@ -85,6 +94,15 @@ void test_setup_brk() {
 }
 
 void test_alloc_and_free_0_bytes() {
+  printf("/*\n");
+  printf(" * Verify if the first block is allocated correctly\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc a block of size 0\n");
+  printf(" * 2. Verify if block starts at initial brk\n");
+  printf(" *\n");
+  printf(" */\n");
+
   printf("=====>> ALLOC 0 BYTES\n");
   
   void *expected_initial_addr = initial_brk; // The address should be the first brk
@@ -116,13 +134,13 @@ void test_alloc_and_free_0_bytes() {
   expected_memory[0] = 1;
   expected_memory[8] = 0;
 
-  compare_memory(expected_memory, p-16, (unsigned long int)(current_brk()-initial_brk));
+  compare_memory(expected_memory, p-16, current_brk() - initial_brk);
 
   printf("------>> %sMemory free%s\n", UNDERLINE, DEFAULT);
   expected_memory[0] = 0;
 
   memory_free(p);
-  compare_memory(expected_memory, p-16, (unsigned long int)(current_brk()-initial_brk));
+  compare_memory(expected_memory, p-16, current_brk() - initial_brk);
 
   printf("------>> %sDismiss brk%s\n", UNDERLINE, DEFAULT);
   expected_brk = initial_brk;
@@ -131,8 +149,17 @@ void test_alloc_and_free_0_bytes() {
 }
 
 void test_alloc_and_free_100_bytes() {
-  printf("=====>> ALLOC 100 BYTES\n");
+  printf("/*\n");
+  printf(" * Verify if alloc and free works for first block\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc a block of size 100\n");
+  printf(" * 2. Free block\n");
+  printf(" *\n");
+  printf(" */\n");
   
+  printf("=====>> ALLOC 100 BYTES\n");
+
   void *expected_initial_addr = initial_brk; // The address should be the first brk
   void *expected_pointer_addr = expected_initial_addr + 16; // The pointer address should be after the block headder
   void *expected_brk = initial_brk + 116; // Should alloc the block header + 100 bytes
@@ -162,13 +189,13 @@ void test_alloc_and_free_100_bytes() {
   expected_memory[0] = 1;
   expected_memory[8] = 100;
 
-  compare_memory(expected_memory, p-16, (unsigned long int)(current_brk()-initial_brk));
+  compare_memory(expected_memory, p-16, current_brk() - initial_brk);
 
   printf("------>> %sMemory free%s\n", UNDERLINE, DEFAULT);
   expected_memory[0] = 0;
 
   memory_free(p);
-  compare_memory(expected_memory, p-16, (unsigned long int)(current_brk()-initial_brk));
+  compare_memory(expected_memory, p-16, current_brk() - initial_brk);
 
   printf("------>> %sDismiss brk%s\n", UNDERLINE, DEFAULT);
   expected_brk = initial_brk;
@@ -177,10 +204,20 @@ void test_alloc_and_free_100_bytes() {
 }
 
 void test_free_address_not_allowed() {
+  printf("/*\n");
+  printf(" * Verify if free doens't attempt to access an address\n");
+  printf(" * out of heap\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc block of size 1\n");
+  printf(" * 2. Try to free an address before initial brk\n");
+  printf(" * 3. Try to free an address after current brk\n");
+  printf(" * 4. Free block\n");
+  printf(" *\n");
+  printf(" */\n");
+
   printf("=====>> ADDRESS NOT ALLOWED FREE\n");
-  printf("------->> %sAddress before initial brk%s\n", UNDERLINE, DEFAULT);
-  memory_alloc(1);
-  
+
   void *p = initial_brk - 1;
   
   char expected_memory[17];
@@ -188,38 +225,70 @@ void test_free_address_not_allowed() {
   expected_memory[0] = 1;
   expected_memory[8] = 1;
 
-  memory_free(p);
-  compare_memory(expected_memory, p + 1, (unsigned long int)(current_brk()-initial_brk));
+  printf("------->> %sInitial memory%s\n", UNDERLINE, DEFAULT);
+  memory_alloc(1);
+  compare_memory(expected_memory, p + 1, current_brk() - initial_brk);
+
+  printf("------->> %sAddress before initial brk%s\n", UNDERLINE, DEFAULT);
+  printf("--------->> %sReturn value%s\n", UNDERLINE, DEFAULT);
+  unsigned long int ret = memory_free(p);
+  assert((void *)0, (void *)ret);
+
+  printf("--------->> %sMemory didn't change%s\n", UNDERLINE, DEFAULT);
+  compare_memory(expected_memory, p + 1, current_brk() - initial_brk);
   dismiss_brk();
 
   printf("------->> %sAddress before end of block header%s\n", UNDERLINE, DEFAULT);
   memory_alloc(1);
   p = initial_brk + 1;
-  memory_free(p);
-  compare_memory(expected_memory, p - 1, (unsigned long int)(current_brk()-initial_brk));
+
+  printf("--------->> %sReturn value%s\n", UNDERLINE, DEFAULT);
+  ret = memory_free(p);
+  assert((void *)0, (void *)ret);
+
+  printf("--------->> %sMemory didn't change%s\n", UNDERLINE, DEFAULT);
+  compare_memory(expected_memory, p - 1, current_brk() - initial_brk);
   dismiss_brk();
 
   printf("------->> %sAddress after current brk%s\n", UNDERLINE, DEFAULT);
   memory_alloc(1);
   p = current_brk() + 1;
 
-  memory_free(p);
-  compare_memory(expected_memory, p - 18, (unsigned long int)(current_brk()-initial_brk));
+  printf("--------->> %sReturn value%s\n", UNDERLINE, DEFAULT);
+  ret = memory_free(p);
+  assert((void *)0, (void *)ret);
+
+  printf("--------->> %sMemory didn't change%s\n", UNDERLINE, DEFAULT);
+  compare_memory(expected_memory, p - 18, current_brk() - initial_brk);
   dismiss_brk();
 
   printf("------->> %sAddress is current brk%s\n", UNDERLINE, DEFAULT);
   memory_alloc(0);
   p = current_brk();
 
+  printf("--------->> %sReturn value%s\n", UNDERLINE, DEFAULT);
+  ret = memory_free(p);
+  assert((void *)1, (void *)ret);
+
+  printf("--------->> %sMemory changed%s\n", UNDERLINE, DEFAULT);
   expected_memory[0] = 0;
   expected_memory[8] = 0;
 
-  memory_free(p);
-  compare_memory(expected_memory, p - 16, (unsigned long int)(current_brk()-initial_brk));
+  compare_memory(expected_memory, p - 16, current_brk() - initial_brk);
   dismiss_brk();
 }
 
 void test_double_free() {
+  printf("/*\n");
+  printf(" * Verify if free doens't crash wheen freeing a free address\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc a block of size 1\n");
+  printf(" * 2. Free block\n");
+  printf(" * 3. Try to free block again\n");
+  printf(" *\n");
+  printf(" */\n");
+
   printf("=====>> DOUBLE FREE\n");
 
   void *p = memory_alloc(1);
@@ -230,16 +299,26 @@ void test_double_free() {
 
   printf("------->> %sFirst free%s\n", UNDERLINE, DEFAULT);
   memory_free(p);
-  compare_memory(expected_memory, p - 16, (unsigned long int)(current_brk()-initial_brk));
+  compare_memory(expected_memory, p - 16, current_brk() - initial_brk);
 
   printf("------->> %sSecond free%s\n", UNDERLINE, DEFAULT);
   memory_free(p);
-  compare_memory(expected_memory, p - 16, (unsigned long int)(current_brk()-initial_brk));
+  compare_memory(expected_memory, p - 16, current_brk() - initial_brk);
 
   dismiss_brk();
 }
 
 void test_alloc_same_block_after_free() {
+  printf("/*\n");
+  printf(" * Verify if block is reused after free\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc block of size 5\n");
+  printf(" * 2. Free block\n");
+  printf(" * 3. Alloc 5 bytes\n");
+  printf(" *\n");
+  printf(" */\n");
+
   printf("=====>> ALLOC SAME BLOCK AFTER FREE\n");
 
   char expected_memory[21];
@@ -250,13 +329,14 @@ void test_alloc_same_block_after_free() {
   printf("------->> %sFirst alloc%s\n", UNDERLINE, DEFAULT);
   void *p1 = memory_alloc(5);
   void *brk1 = current_brk();
+
   printf("--------->> %sMemory after first alloc%s\n", UNDERLINE, DEFAULT);
-  compare_memory(expected_memory, p1 - 16, (unsigned long int)(brk1-initial_brk));
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
 
   printf("--------->> %sMemory after free%s\n", UNDERLINE, DEFAULT);
   expected_memory[0] = 0;
   memory_free(p1);
-  compare_memory(expected_memory, p1 - 16, (unsigned long int)(brk1-initial_brk));
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
 
   printf("------->> %sSecond alloc (after free)%s\n", UNDERLINE, DEFAULT);
   expected_memory[0] = 1;
@@ -270,12 +350,22 @@ void test_alloc_same_block_after_free() {
   assert(brk1, brk2);
 
   printf("--------->> %sMemory after second alloc%s\n", UNDERLINE, DEFAULT);
-  compare_memory(expected_memory, p2 - 16, (unsigned long int)(brk2-initial_brk));
+  compare_memory(expected_memory, p2 - 16, current_brk() - initial_brk);
 
   dismiss_brk();
 }
 
 void test_alloc_after_free_dont_split() {
+  printf("/*\n");
+  printf(" * Verify if block isn't split if remaining size is too small\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc block of size 17\n");
+  printf(" * 2. Free block\n");
+  printf(" * 3. Alloc block of size 1\n");
+  printf(" *\n");
+  printf(" */\n");
+
   printf("=====>> ALLOC AFTER FREE, DONT SPLIT\n");
 
   char expected_memory[33];
@@ -286,15 +376,16 @@ void test_alloc_after_free_dont_split() {
   printf("------->> %sFirst alloc%s\n", UNDERLINE, DEFAULT);
   void *p1 = memory_alloc(17);
   void *brk1 = current_brk();
+
   printf("--------->> %sMemory after first alloc%s\n", UNDERLINE, DEFAULT);
-  compare_memory(expected_memory, p1 - 16, (unsigned long int)(brk1-initial_brk));
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
 
   printf("--------->> %sMemory after free%s\n", UNDERLINE, DEFAULT);
   expected_memory[0] = 0;
   memory_free(p1);
-  compare_memory(expected_memory, p1 - 16, (unsigned long int)(brk1-initial_brk));
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
 
-  printf("------->> %sSecond alloc (remaining space is of 16 bytes)%s\n", UNDERLINE, DEFAULT);
+  printf("------->> %sSecond alloc (remaining space would be of 16 bytes)%s\n", UNDERLINE, DEFAULT);
   expected_memory[0] = 1;
   void *p2 = memory_alloc(1);
   void *brk2 = current_brk();
@@ -306,12 +397,21 @@ void test_alloc_after_free_dont_split() {
   assert(brk1, brk2);
 
   printf("--------->> %sMemory after second alloc%s\n", UNDERLINE, DEFAULT);
-  compare_memory(expected_memory, p2 - 16, (unsigned long int)(brk2-initial_brk));
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
 
   dismiss_brk();
 }
 
 void test_alloc_two_consecutives_blocks() {
+  printf("/*\n");
+  printf(" * Verify if new block is created when requesting more than one\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc a block of size 5\n");
+  printf(" * 2. Alloc block of size 3\n");
+  printf(" *\n");
+  printf(" */\n");
+
   printf("=====>> ALLOC TWO CONSECUTIVES BLOCKS\n");
 
   char expected_memory[40];
@@ -323,14 +423,13 @@ void test_alloc_two_consecutives_blocks() {
 
   printf("------->> %sFirst alloc%s\n", UNDERLINE, DEFAULT);
   void *p1 = memory_alloc(5);
-  void *brk1 = current_brk();
 
   printf("--------->> %sBrk after first alloc%s\n", UNDERLINE, DEFAULT);
   void *expected_brk = initial_brk + 21;
   assert(expected_brk, current_brk());
 
   printf("--------->> %sMemory after first alloc%s\n", UNDERLINE, DEFAULT);
-  compare_memory(expected_memory, p1 - 16, (unsigned long int)(brk1-initial_brk));
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
 
   printf("------->> %sSecond alloc%s\n", UNDERLINE, DEFAULT);
   void *p2 = memory_alloc(3);
@@ -344,12 +443,21 @@ void test_alloc_two_consecutives_blocks() {
   assert(p1 + 5, p2 - 16);
 
   printf("--------->> %sMemory after second alloc%s\n", UNDERLINE, DEFAULT);
-  compare_memory(expected_memory, p1 - 16, (unsigned long int)(brk2-initial_brk));
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
 
   dismiss_brk();
 }
 
 void test_three_consecutives_blocks_free_second() {
+  printf("/*\n");
+  printf(" * Verify if free only changes requested address\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc three blocks of size 1\n");
+  printf(" * 2. Free the second block\n");
+  printf(" *\n");
+  printf(" */\n");
+
   printf("=====>> ALLOC THREE CONSECUTIVES BLOCKS, FREE THE SECOND ONE\n");
 
   char expected_memory[51];
@@ -370,12 +478,426 @@ void test_three_consecutives_blocks_free_second() {
   assert(expected_brk, current_brk());
 
   printf("------->> %sMemory after allocs%s\n", UNDERLINE, DEFAULT);
-  compare_memory(expected_memory, p1 - 16, (unsigned long int)(current_brk()-initial_brk));
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
 
   printf("------->> %sMemory after free in second block%s\n", UNDERLINE, DEFAULT);
   memory_free(p2);
   expected_memory[17] = 0;
-  compare_memory(expected_memory, p1 - 16, (unsigned long int)(current_brk()-initial_brk));
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
+
+  dismiss_brk();
+}
+
+void test_alloc_end_heap_after_free() {
+  printf("/*\n");
+  printf(" * Verify if new block isn't created wheen size is too small,\n");
+  printf(" * a new block should be created at end of heap\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc a block of size 1\n");
+  printf(" * 2. Free block\n");
+  printf(" * 3. Alloc block of size 2\n");
+  printf(" *\n");
+  printf(" */\n");
+
+  printf("=====>> ALLOC END HEAP AFTER FREE\n");
+
+  char expected_memory[35];
+  memset(expected_memory, 0, 35);
+  expected_memory[0] = 0;
+  expected_memory[8] = 1;
+  expected_memory[17] = 1;
+  expected_memory[25] = 2;
+
+  void *p1 = memory_alloc(1);
+  printf("------->> %sBrk after first alloc%s\n", UNDERLINE, DEFAULT);
+  void *brk1 = initial_brk + 17;
+  assert(brk1, current_brk());
+  
+  printf("------->> %sBrk after free and second allocs%s\n", UNDERLINE, DEFAULT);
+  memory_free(p1);
+  void *p2 = memory_alloc(2);
+
+  void *brk2 = brk1 + 18;
+  assert(brk2, current_brk());
+
+  printf("------->> %sSecond block start is at previous brk%s\n", UNDERLINE, DEFAULT);
+  assert(brk1, p2 - 16);
+
+  printf("------->> %sMemory after free and allocs%s\n", UNDERLINE, DEFAULT);
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
+
+  dismiss_brk();
+}
+
+void test_split_in_two_exact_size() {
+  printf("/*\n");
+  printf(" * Verify if two blocks are allocated inside a previous one\n");
+  printf(" * that has been freed and take full size\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc block of size 18\n");
+  printf(" * 2. Free block\n");
+  printf(" * 3. Alloc two blocks of size 1\n");
+  printf(" *\n");
+  printf(" */\n");
+
+  printf("=====>> SPLIT IN TWO EXACT SIZE AFTER FREE\n");
+
+  char expected_memory[34];
+  memset(expected_memory, 0, 34);
+  expected_memory[0] = 1;
+  expected_memory[8] = 1;
+
+  void *p1 = memory_alloc(18);
+  void *brk = initial_brk + 34;
+  memory_free(p1);
+
+  printf("----->> %sFirst split%s\n", UNDERLINE, DEFAULT);
+  printf("------->> %sFirst split is at start of block%s\n", UNDERLINE, DEFAULT);
+  void *p2 = memory_alloc(1);
+  assert(p1 - 16, p2 - 16);
+
+  printf("------->> %sBrk didnt change after first split%s\n", UNDERLINE, DEFAULT);
+  assert(brk, current_brk());
+
+  printf("----->> %sSecond split%s\n", UNDERLINE, DEFAULT);
+  printf("------->> %sSecond split is after first split%s\n", UNDERLINE, DEFAULT);
+  void *p3 = memory_alloc(1);
+  assert(p2 + 1, p3 - 16);
+
+  printf("------->> %sBrk didnt change after second split%s\n", UNDERLINE, DEFAULT);
+  assert(brk, current_brk());
+
+  printf("------->> %sMemory after second split is allocated%s\n", UNDERLINE, DEFAULT);
+  expected_memory[17] = 1;
+  expected_memory[25] = 1;
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
+
+  dismiss_brk();
+}
+
+void test_split_in_two_size_is_not_enough() {
+  printf("/*\n");
+  printf(" * Verify if a block that doesn't fit in the remaining\n");
+  printf(" * space of a free bigger block after another block is\n");
+  printf(" * allocated is allocated at end of heap\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc block of size 18\n");
+  printf(" * 2. Free block\n");
+  printf(" * 3. Alloc block of size 1\n");
+  printf(" * 4. Alloc block of size 2\n");
+  printf(" *\n");
+  printf(" */\n");
+
+  printf("=====>> SPLIT IN TWO AFTER FREE, SIZE IS NOT ENOUGH\n");
+
+  char expected_memory[51];
+  memset(expected_memory, 0, 51);
+  expected_memory[0] = 1;
+  expected_memory[8] = 1;
+  expected_memory[17] = 0;
+  expected_memory[25] = 1;
+  expected_memory[34] = 1;
+  expected_memory[42] = 2;
+
+  void *p1 = memory_alloc(18);
+  void *brk = initial_brk + 34;
+  memory_free(p1);
+
+  printf("----->> %sFirst split%s\n", UNDERLINE, DEFAULT);
+  printf("------->> %sFirst split is at start of block%s\n", UNDERLINE, DEFAULT);
+  void *p2 = memory_alloc(1);
+  assert(p1 - 16, p2 - 16);
+
+  printf("------->> %sBrk didnt change after first split%s\n", UNDERLINE, DEFAULT);
+  assert(brk, current_brk());
+
+  printf("----->> %sSecond block%s\n", UNDERLINE, DEFAULT);
+  printf("------->> %sSecond block is after previous brk%s\n", UNDERLINE, DEFAULT);
+  void *p3 = memory_alloc(2);
+  assert(brk, p3 - 16);
+
+  printf("------->> %sBrk after second block%s\n", UNDERLINE, DEFAULT);
+  brk += 18;
+  assert(brk, current_brk());
+
+  printf("------->> %sMemory after second block is allocated%s\n", UNDERLINE, DEFAULT);
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
+
+  dismiss_brk();
+}
+
+void test_split_in_two_size_fill() {
+  printf("/*\n");
+  printf(" * Verify if a block is extended to take the free space in a free\n");
+  printf(" * block and the next block is allocated at end of heap\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc block of size 17\n");
+  printf(" * 2. Free block\n");
+  printf(" * 3. Alloc two blocks of size 1\n");
+  printf(" *\n");
+  printf(" */\n");
+
+  printf("=====>> ALLOC AFTER FREE, EXTEND FIRST BLOCK\n");
+
+  char expected_memory[49];
+  memset(expected_memory, 0, 49);
+  expected_memory[0] = 1;
+  expected_memory[8] = 17;
+  expected_memory[33] = 1;
+  expected_memory[41] = 1;
+
+  void *p1 = memory_alloc(17);
+  memory_free(p1);
+
+  printf("----->> %sMemory after first alloc after free%s\n", UNDERLINE, DEFAULT);
+  memory_alloc(1);
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
+
+  printf("----->> %sMemory after second alloc after free%s\n", UNDERLINE, DEFAULT);
+  memory_alloc(1);
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
+
+  dismiss_brk();
+}
+
+void test_search_until_free() {
+  printf("/*\n");
+  printf(" * Search between allocated blocks until one is free\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc 5 blocks of size 0\n");
+  printf(" * 2. Free last block\n");
+  printf(" * 3. Alloc block of size 0\n");
+  printf(" *\n");
+  printf(" */\n");
+
+  printf("=====>> SEARCH FOR FREE BLOCK\n");
+
+  char expected_memory[80];
+  memset(expected_memory, 0, 80);
+  expected_memory[0] = 1;         // With size 0 each block is 16 byts appart
+  expected_memory[16] = 1;
+  expected_memory[32] = 1;
+  expected_memory[48] = 1;
+
+  void *p1 = memory_alloc(0);
+  memory_alloc(0);
+  memory_alloc(0);
+  memory_alloc(0);
+  void *p2 = memory_alloc(0);
+  memory_free(p2);
+
+  printf("----->> %sMemory after initial allocs and free%s\n", UNDERLINE, DEFAULT);
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
+
+  printf("----->> %sMemory after searching for free block%s\n", UNDERLINE, DEFAULT);
+  expected_memory[64] = 1;
+  memory_alloc(0);
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
+
+  dismiss_brk();
+}
+
+void test_search_until_fit() {
+  printf("/*\n");
+  printf(" * Search between free blocks until one that fits\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc blocks of size [0..3] \n");
+  printf(" * 2. Free blocks\n");
+  printf(" * 3. Alloc block of size 3\n");
+  printf(" *\n");
+  printf(" */\n");
+
+  printf("=====>> SEARCH FOR BLOCK THAT FITS\n");
+
+  char expected_memory[70];
+  memset(expected_memory, 0, 70);
+  expected_memory[24] = 1;
+  expected_memory[41] = 2;
+  expected_memory[59] = 3;
+
+  void *p1 = memory_alloc(0);
+  memory_free(p1);
+
+  void *p2 = memory_alloc(1);
+  memory_free(p2);
+
+  p2 = memory_alloc(2);
+  memory_free(p2);
+
+  p2 = memory_alloc(3);
+  memory_free(p2);
+
+  printf("----->> %sMemory after initial allocs and free%s\n", UNDERLINE, DEFAULT);
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
+
+  printf("----->> %sMemory after searching for block that fits%s\n", UNDERLINE, DEFAULT);
+  expected_memory[51] = 1;
+  memory_alloc(3);
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
+
+  dismiss_brk();
+}
+
+void test_alloc_first_fit() {
+  printf("/*\n");
+  printf(" * Alloc new block in the first one that fits\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc two blocks of size 3\n");
+  printf(" * 2. Free blocks\n");
+  printf(" * 3. Alloc block of size 3\n");
+  printf(" *\n");
+  printf(" */\n");
+
+  printf("=====>> ALLOC IN FIRST FIT\n");
+
+  char expected_memory[38];
+  memset(expected_memory, 0, 38);
+  expected_memory[0] = 1;
+  expected_memory[8] = 3;
+  expected_memory[27] = 3;
+
+  void *p1 = memory_alloc(3);
+  void *p2 = memory_alloc(3);
+
+  memory_free(p1);
+  memory_free(p2);
+
+  memory_alloc(3);
+
+  printf("----->> %sMemory after final alloc%s\n", UNDERLINE, DEFAULT);
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
+
+  dismiss_brk();
+}
+
+void test_alloc_first_fit_extend() {
+  printf("/*\n");
+  printf(" * First fit is bigger than request\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc one block of size 4\n");
+  printf(" * 1. Alloc one block of size 1\n");
+  printf(" * 2. Free blocks\n");
+  printf(" * 3. Alloc block of size 1\n");
+  printf(" *\n");
+  printf(" */\n");
+
+  printf("=====>> EXTEND IN FIRST FIT\n");
+
+  char expected_memory[37];
+  memset(expected_memory, 0, 37);
+  expected_memory[0] = 1;
+  expected_memory[8] = 4;
+  expected_memory[28] = 1;
+
+  void *p1 = memory_alloc(4);
+  void *p2 = memory_alloc(1);
+
+  memory_free(p1);
+  memory_free(p2);
+
+  memory_alloc(1);
+
+  printf("----->> %sMemory after final alloc%s\n", UNDERLINE, DEFAULT);
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
+
+  dismiss_brk();
+}
+
+void test_multiple_splits() {
+  printf("/*\n");
+  printf(" * Alloc a block and split it in multiple parts\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc a block of size 100\n");
+  printf(" * 2. Free block\n");
+  printf(" * 3. Alloc blocks of size 1\n");
+  printf(" *\n");
+  printf(" */\n");
+
+  printf("=====>> SPLIT BLOCK IN MULTIPLE PARTS\n");
+
+  char expected_memory[116];
+  memset(expected_memory, 0, 116);
+
+  void *p1 = memory_alloc(100);
+  memory_free(p1);
+
+  int i;
+  for ( i = 0; i < 6; i++ ) {
+    expected_memory[i * 17] = 1;
+    expected_memory[(i * 17) + 8] = 1;
+    memory_alloc(1);
+  }
+
+  expected_memory[((i - 1) * 17) + 8] = 15;   // Change last block size
+
+  printf("----->> %sMemory after splits%s\n", UNDERLINE, DEFAULT);
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
+
+  dismiss_brk();
+}
+
+void test_split_multiple_blocks() {
+  printf("/*\n");
+  printf(" * Alloc at end of heap and split mixed\n");
+  printf(" *\n");
+  printf(" * Steps:\n");
+  printf(" * 1. Alloc a block of size 18\n");
+  printf(" * 2. Free block\n");
+  printf(" * 3. Alloc a block of size 1\n");
+  printf(" * 4. Alloc a block of size 24\n");
+  printf(" * 5. Free block\n");
+  printf(" * 6. Alloc a block of size 2\n");
+  printf(" * 7. Alloc a block of size 1\n");
+  printf(" * 8. Alloc a block of size 26\n");
+  printf(" * 9. Free block\n");
+  printf(" * 10. Alloc a block of size 5\n");
+  printf(" * 11. Alloc a block of size 4\n");
+  printf(" * 12. Alloc a block of size 3\n");
+  printf(" *\n");
+  printf(" */\n");
+
+  printf("=====>> SPLIT BLOCK IN MULTIPLE PARTS\n");
+
+  char expected_memory[112];
+  memset(expected_memory, 0, 112);
+
+  void *p1 = memory_alloc(18);
+  memory_free(p1);
+  memory_alloc(1);
+  void *p2 = memory_alloc(21);
+  memory_free(p2);
+  memory_alloc(2);
+  memory_alloc(1);
+  p2 = memory_alloc(25);
+  memory_free(p2);
+  memory_alloc(5);
+  memory_alloc(4);
+  memory_alloc(3);
+
+  expected_memory[0] = 1;
+  expected_memory[8] = 1;
+  expected_memory[17] = 1;
+  expected_memory[25] = 1;
+  expected_memory[34] = 1;
+  expected_memory[42] = 2;
+  expected_memory[52] = 1;
+  expected_memory[60] = 3;
+  expected_memory[71] = 1;
+  expected_memory[79] = 5;
+  expected_memory[92] = 1;
+  expected_memory[100] = 4;
+
+  printf("----->> %sMemory after splits and allocs%s\n", UNDERLINE, DEFAULT);
+  compare_memory(expected_memory, p1 - 16, current_brk() - initial_brk);
 
   dismiss_brk();
 }
@@ -385,12 +907,25 @@ int main() {
   test_setup_brk();
   test_alloc_and_free_0_bytes();
   test_alloc_and_free_100_bytes();
-  test_free_address_not_allowed();
-  test_double_free();
-  test_alloc_same_block_after_free();
-  test_alloc_after_free_dont_split();
   test_alloc_two_consecutives_blocks();
+
+  test_double_free();
+  test_free_address_not_allowed();
+  test_alloc_same_block_after_free();
+  test_alloc_end_heap_after_free();
+  test_search_until_free();
+  test_search_until_fit();
+
+  test_alloc_after_free_dont_split();
   test_three_consecutives_blocks_free_second();
+  test_split_in_two_exact_size();
+  test_split_in_two_size_is_not_enough();
+  test_split_in_two_size_fill();
+  test_multiple_splits();
+  test_split_multiple_blocks();
+
+  test_alloc_first_fit();
+  test_alloc_first_fit_extend();
 
   total();
   return 0;

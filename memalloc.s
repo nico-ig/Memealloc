@@ -61,6 +61,7 @@ memory_alloc:
     
                                   #block will be split in two    
     movq %r14, %r15               #%r15 has a copy of current address
+    addq $16, %r15                
     addq %r12, %r15               #%r15 is the start of remaining block after split
     movq $0, (%r15)               #flag remaining block as free
 
@@ -107,11 +108,13 @@ memory_free:
   pushq %rbp
   movq %rsp, %rbp
   pushq %r12                    #save preserved register
+  pushq %r13
  
   movq %rax, %r12               #r12 has the address to be free
   movq original_brk(%rip), %r9
   addq $16, %r9                 #address should be after the first block header
 
+  movq $0, %r13                 #%r13 will be the return value
   cmp %r9, %r12                 #verify if address is after original brk
   jl _FREE_END                  #cant free address
 
@@ -121,9 +124,12 @@ memory_free:
   
   subq $16, %r12                #flag is 16 bytes before received address
   movq $0, (%r12)               #set flag to 0
+  movq $1, %r13
 
   _FREE_END:
-    popq %r12                   #restore preserved register
+    movq %r13, %rax             #return value
+    popq %r13                   #restore preserved register
+    popq %r12
     popq %rbp
     ret
 
