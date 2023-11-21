@@ -1,4 +1,9 @@
-TARGET = $(firstword $(MAKECMDGOALS))
+
+ifeq ($(MAKECMDGOALS),)
+	TARGET = avaliacao
+else
+	TARGET = $(firstword $(MAKECMDGOALS))
+endif
 
 CC = gcc
 CFLAGS = -g -Wall -Wextra
@@ -20,6 +25,6 @@ clean:
 		@rm -f *.o vgcore*
 
 purge: clean
-		@rm -f $(TARGET) exemplo test
+		@rm -f $(TARGET) exemplo test avaliacao
 
 
